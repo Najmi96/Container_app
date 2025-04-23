@@ -1,0 +1,48 @@
+name: Trigger auto deployment for ptazsg-5testnajmi-conapp
+
+# When this action will be executed
+on:
+  # Automatically trigger it when detected changes in repo
+  push:
+    branches: 
+      [ feature/najmi ]
+    paths:
+    - '**'
+    - '.github/workflows/ptazsg-5testnajmi-conapp-AutoDeployTrigger-9089c4b5-8e53-4d7d-b99c-16211dc44a15.yml'
+
+  # Allow manual trigger 
+  workflow_dispatch:      
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions: 
+      id-token: write #This is required for requesting the OIDC JWT Token
+      contents: read #Required when GH token is used to authenticate with private repo
+
+    steps:
+      - name: Checkout to the branch
+        uses: actions/checkout@v2
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          client-id: ${{ secrets.PTAZSG5TESTNAJMICONAPP_AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.PTAZSG5TESTNAJMICONAPP_AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.PTAZSG5TESTNAJMICONAPP_AZURE_SUBSCRIPTION_ID }}
+
+      - name: Build and push container image to registry
+        uses: azure/container-apps-deploy-action@v2
+        with:
+          appSourcePath: ${{ github.workspace }}
+          _dockerfilePathKey_: _dockerfilePath_
+          registryUrl: ptazsg5testnajmiacr.azurecr.io
+          registryUsername: ${{ secrets.PTAZSG5TESTNAJMICONAPP_REGISTRY_USERNAME }}
+          registryPassword: ${{ secrets.PTAZSG5TESTNAJMICONAPP_REGISTRY_PASSWORD }}
+          containerAppName: ptazsg-5testnajmi-conapp
+          resourceGroup: PTAZSG-IAC-DEV-AGWV1-RG
+          imageToBuild: ptazsg5testnajmiacr.azurecr.io/ptazsg-5testnajmi-conapp:${{ github.sha }}
+          _buildArgumentsKey_: |
+            _buildArgumentsValues_
+
+
